@@ -399,8 +399,11 @@ abstract class Channel extends StateMachine[ChannelData] { me =>
 
 
       case (some: HasCommitments, CMDOnline, SYNC) =>
-        me SEND ChannelReestablish(some.commitments.channelId,
-          some.commitments.localCommit.index + 1, some.commitments.remoteCommit.index)
+        val secrets = some.commitments.remotePerCommitmentSecrets
+        val yourLastPerCommitmentSecret = secrets.lastIndex.map(ShaChain.moves).flatMap(ShaChain getHash secrets.hashes) getOrElse zeroes(32)
+        val myCurrentPerCommitmentPoint = Generators.perCommitPoint(some.commitments.localParams.shaSeed, some.commitments.localCommit.index)
+        me SEND ChannelReestablish(some.commitments.channelId, some.commitments.localCommit.index + 1, some.commitments.remoteCommit.index,
+          Some apply Scalar(yourLastPerCommitmentSecret), Some apply myCurrentPerCommitmentPoint)
 
 
       case (wait: WaitFundingDoneData, CMDOffline, WAIT_FUNDING_DONE) => BECOME(wait, SYNC)
@@ -443,7 +446,7 @@ abstract class Channel extends StateMachine[ChannelData] { me =>
       case (ref: RefundingData, CMDSpent(spendTx), REFUNDING)
         // GUARD: we have lost our state and asked them to spend their local commit
         if spendTx.txIn.exists(_.outPoint == ref.commitments.commitInput.outPoint) =>
-        // `commitments.remoteCommit` has to be updated to their `myCurrentPerCommitmentPoint` at this point
+        // `commitments.remoteCommit` has to contain their `myCurrentPerCommitmentPoint` at this point
         val rcp = Closing.claimRemoteMainOutput(ref.commitments, ref.commitments.remoteCommit, spendTx)
         val d1 = me STORE ClosingData(ref.announce, ref.commitments, remoteCommit = rcp :: Nil)
         me UPDATE d1

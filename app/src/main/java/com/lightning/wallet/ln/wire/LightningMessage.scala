@@ -1,6 +1,5 @@
 package com.lightning.wallet.ln.wire
 
-import android.os.Handler
 import com.lightning.wallet.ln.wire.LightningMessageCodecs._
 import fr.acinq.bitcoin.{BinaryData, MilliSatoshi, Satoshi}
 import fr.acinq.bitcoin.Crypto.{Point, PublicKey, Scalar}
@@ -14,7 +13,7 @@ trait RoutingMessage extends LightningMessage
 trait ChannelMessage extends LightningMessage
 
 case class Error(channelId: BinaryData, data: BinaryData) extends LightningMessage {
-  Tools log s"Remote error, channelId: $channelId, " + new String(data.toArray, "UTF-8")
+  Tools log s"Error, channelId: $channelId, " + new String(data.toArray, "UTF-8")
 }
 
 case class Init(globalFeatures: BinaryData, localFeatures: BinaryData) extends LightningMessage

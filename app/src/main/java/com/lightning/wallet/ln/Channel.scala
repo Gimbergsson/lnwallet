@@ -395,6 +395,11 @@ abstract class Channel extends StateMachine[ChannelData] { me =>
         startLocalCurrentClose(some)
 
 
+      case (recovery: RefundingData, cr: ChannelReestablish, REFUNDING) if cr.channelId == recovery.commitments.channelId =>
+        val d1 = recovery.modify(_.commitments.remoteCommit.remotePerCommitmentPoint) setTo cr.myCurrentPerCommitmentPoint.get
+        me UPDATE d1 SEND Error(cr.channelId, "Please be so kind as to spend your local commit" getBytes "UTF-8")
+
+
       // SYNC: ONLINE/OFFLINE
 
 

@@ -8,7 +8,8 @@ import com.lightning.wallet.Denomination._
 import com.lightning.wallet.lnutils.JsonHttpUtils._
 import com.lightning.wallet.lnutils.ImplicitJsonFormats._
 import rx.lang.scala.{Scheduler, Observable => Obs}
-import org.bitcoinj.core.{Coin, Transaction}
+import org.bitcoinj.core.Transaction.DEFAULT_TX_FEE
+import org.bitcoinj.core.Coin
 import spray.json.JsonFormat
 import scala.util.Try
 
@@ -70,8 +71,8 @@ case class Rates(feeHistory: Seq[Double], exchange: Fiat2Btc, stamp: Long) {
   // Bitcoin Core provides unreliable fees in testnet so just use default here
   // TODO: remove for mainnet
 
-  lazy val feeLive = {
-    val real = btcBigDecimal2MSat(feeHistory.sum / feeHistory.size): Coin
-    if (real < Transaction.DEFAULT_TX_FEE) Transaction.DEFAULT_TX_FEE else real
+  lazy val feeLive = if (feeHistory.isEmpty) DEFAULT_TX_FEE else {
+    val mu: Coin = btcBigDecimal2MSat(feeHistory.sum / feeHistory.size)
+    if (mu isLessThan DEFAULT_TX_FEE) DEFAULT_TX_FEE else mu
   }
 }
